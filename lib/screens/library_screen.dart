@@ -1,128 +1,128 @@
 import 'package:flutter/material.dart';
-import '../baseDD/database.dart'; // Caminho do seu banco de dados
-import '../models/jogo.dart'; // Caminho da sua classe Jogo
+import '../models/jogo.dart';
+import '../baseDD/database.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
-
   @override
   _LibraryScreenState createState() => _LibraryScreenState();
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  // Lista que vai guardar os jogos vindos do banco
-  List<Jogo> meusJogos = [];
+  // Instância do banco de dados
+  final DatabaseHelper dbHelper = DatabaseHelper();
+  
+  // Controladores para capturar o que o usuário digita
+  final TextEditingController controladorTitulo = TextEditingController();
+  final TextEditingController controladorPlataforma = TextEditingController();
+  final TextEditingController controladorStatus = TextEditingController();
+  final TextEditingController controladorNota = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    // Assim que a tela abrir, ele busca os jogos salvos
-    _atualizarLista();
-  }
-
-  // Função para buscar no banco e atualizar a tela usando setState
-  void _atualizarLista() async {
-    List<Jogo> jogosDoBanco = await findAll();
-
-    // O setState forçará a tela a ser desenhada novamente com a nova lista
-    setState(() {
-      meusJogos = jogosDoBanco;
-    });
-  }
-
-  // Função para abrir a janela pop-up (formulário)
-  void _mostrarFormularioNovoJogo(BuildContext context) {
-    TextEditingController tituloController = TextEditingController();
-    TextEditingController plataformaController = TextEditingController();
-
+  // Função que mostra a janelinha (pop-up) do formulário
+  void _mostrarFormulario() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Novo Jogo na Estante"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: tituloController,
-                decoration: const InputDecoration(labelText: "Título do Jogo"),
-              ),
-              TextField(
-                controller: plataformaController,
-                decoration:
-                    const InputDecoration(labelText: "Plataforma (ex: PC, PS5)"),
-              ),
-            ],
+          title: Text("Adicionar Novo Jogo"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controladorTitulo,
+                  decoration: InputDecoration(labelText: "Título do Jogo"),
+                ),
+                TextField(
+                  controller: controladorPlataforma,
+                  decoration: InputDecoration(labelText: "Plataforma (ex: PC, PS5)"),
+                ),
+                TextField(
+                  controller: controladorStatus,
+                  decoration: InputDecoration(labelText: "Status (ex: Jogando, Zerado)"),
+                ),
+                TextField(
+                  controller: controladorNota,
+                  decoration: InputDecoration(labelText: "Nota (0 a 10)"),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                // Fecha a janela sem salvar
-                Navigator.pop(context);
-              },
-              child: const Text("Cancelar"),
+              onPressed: () => Navigator.pop(context), // Fecha a janela se cancelar
+              child: Text("Cancelar"),
             ),
             ElevatedButton(
               onPressed: () async {
-                // 1. Cria o objeto Jogo com o que foi digitado
+                // Monta o jogo com os dados digitados
                 Jogo novoJogo = Jogo(
-                  titulo: tituloController.text,
-                  plataforma: plataformaController.text,
-                  status: "Na Fila",
-                  nota: 0,
+                  titulo: controladorTitulo.text,
+                  plataforma: controladorPlataforma.text,
+                  status: controladorStatus.text,
+                  nota: int.tryParse(controladorNota.text) ?? 0,
                 );
 
-                // 2. Salva no banco de dados
-                await insert(novoJogo);
+                // Salva no banco de dados esperando a conclusão
+                await dbHelper.insertJogo(novoJogo);
+                
+                // Limpa os campos para o próximo cadastro
+                controladorTitulo.clear();
+                controladorPlataforma.clear();
+                controladorStatus.clear();
+                controladorNota.clear();
 
-                // 3. Fecha o pop-up (formulário) retornando para a estante
+                // Fecha a janelinha do formulário
                 Navigator.pop(context);
-
-                // 4. Aciona a atualização da lista para exibir o novo jogo na tela
-                _atualizarLista();
+                
+                // Atualiza a tela para mostrar o jogo recém-adicionado
+                setState(() {}); 
               },
-              child: const Text("Salvar"),
+              child: Text("Salvar"),
             ),
           ],
         );
-      },
+      }
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Minha Estante"),
-      ),
-      // Verificamos se a lista está vazia
-      body: meusJogos.isEmpty
-          ? const Center(
-              child: Text(
-                "Nenhum jogo na estante ainda.\nClique no + para adicionar!",
-                textAlign: TextAlign.center,
-              ),
-            )
-          // Se não estiver vazia, mostramos a lista rolável (ListView)
-          : ListView.builder(
-              itemCount: meusJogos.length,
-              itemBuilder: (context, index) {
-                Jogo jogo = meusJogos[index];
-                return Card(
-                  child: ListTile(
-                    title: Text(jogo.titulo,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                        "Plataforma: ${jogo.plataforma} | Status: ${jogo.status}"),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          _mostrarFormularioNovoJogo(context);
+      appBar: AppBar(title: Text("Minha Estante")),
+      
+      // O FutureBuilder busca a lista de jogos salva no SQLite automaticamente
+      body: FutureBuilder<List<Jogo>>(
+        future: dbHelper.findAll(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator()); // Carregando
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text("Sua estante está vazia. Adicione um jogo!"));
+          }
+          
+          // Desenha a lista de jogos salvos
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              Jogo jogo = snapshot.data![index];
+              return Card(
+                child: ListTile(
+                  title: Text(jogo.titulo, style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text("${jogo.plataforma} • ${jogo.status}"),
+                  trailing: Text("Nota: ${jogo.nota}/10", style: TextStyle(fontSize: 14)),
+                ),
+              );
+            },
+          );
         },
+      ),
+      
+      // Botão flutuante de + que chama a função de mostrar o formulário
+      floatingActionButton: FloatingActionButton(
+        onPressed: _mostrarFormulario,
+        child: Icon(Icons.add),
       ),
     );
   }
