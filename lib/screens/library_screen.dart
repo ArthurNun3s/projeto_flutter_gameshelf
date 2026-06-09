@@ -3,7 +3,7 @@ import '../baseDD/database.dart'; // Caminho do seu banco de dados
 import '../models/jogo.dart'; // Caminho da sua classe Jogo
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({Key? key}) : super(key: key);
+  const LibraryScreen({super.key});
 
   @override
   _LibraryScreenState createState() => _LibraryScreenState();
@@ -39,18 +39,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Novo Jogo na Estante"),
+          title: const Text("Novo Jogo na Estante"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: tituloController,
-                decoration: InputDecoration(labelText: "Título do Jogo"),
+                decoration: const InputDecoration(labelText: "Título do Jogo"),
               ),
               TextField(
                 controller: plataformaController,
                 decoration:
-                    InputDecoration(labelText: "Plataforma (ex: PC, PS5)"),
+                    const InputDecoration(labelText: "Plataforma (ex: PC, PS5)"),
               ),
             ],
           ),
@@ -60,7 +60,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 // Fecha a janela sem salvar
                 Navigator.pop(context);
               },
-              child: Text("Cancelar"),
+              child: const Text("Cancelar"),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -81,7 +81,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 // 4. Aciona a atualização da lista para exibir o novo jogo na tela
                 _atualizarLista();
               },
-              child: Text("Salvar"),
+              child: const Text("Salvar"),
             ),
           ],
         );
@@ -93,11 +93,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Minha Estante"),
+        title: const Text("Minha Estante"),
       ),
       // Verificamos se a lista está vazia
       body: meusJogos.isEmpty
-          ? Center(
+          ? const Center(
               child: Text(
                 "Nenhum jogo na estante ainda.\nClique no + para adicionar!",
                 textAlign: TextAlign.center,
@@ -111,7 +111,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 return Card(
                   child: ListTile(
                     title: Text(jogo.titulo,
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
                         "Plataforma: ${jogo.plataforma} | Status: ${jogo.status}"),
                   ),
@@ -119,7 +119,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
         onPressed: () {
           _mostrarFormularioNovoJogo(context);
         },
